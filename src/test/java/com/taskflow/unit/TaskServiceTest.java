@@ -17,6 +17,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -161,6 +163,33 @@ class TaskServiceTest {
             return new Task(id, title, "desc", TaskStatus.TODO, Priority.MED, PROYECTO, assigneeId, null);
         } catch (TaskValidationException e) {
             throw new IllegalStateException("dato de prueba inválido", e);
+        }
+    }
+
+    @Nested
+    @DisplayName("vencidas")
+    class Vencidas {
+
+        @Test
+        void vencidas_devuelveSoloVencidasYOrdenadas() throws TaskValidationException {
+            LocalDate now = LocalDate.now();
+            // vencida más antigua (más atrasada)
+            Task vieja = new Task(10L, "Antigua vencida", "desc", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, now.minusDays(5));
+            // vencida más reciente
+            Task reciente = new Task(11L, "Reciente vencida", "desc", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, now.minusDays(1));
+            // pasada pero DONE -> no debe aparecer
+            Task hecha = new Task(12L, "Hecha pasada", "desc", TaskStatus.DONE, Priority.MED, PROYECTO, 1L, now.minusDays(2));
+            // sin dueDate -> no debe aparecer
+            Task sinFecha = new Task(13L, "Sin fecha", "desc", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, null);
+
+            when(repository.findAll()).thenReturn(List.of(reciente, hecha, sinFecha, vieja));
+
+            var resultado = service.vencidas();
+
+            // Solo las dos vencidas y en orden por dueDate ascendente (la más antigua primero)
+            assertEquals(2, resultado.size());
+            assertEquals(10L, resultado.get(0).getId());
+            assertEquals(11L, resultado.get(1).getId());
         }
     }
 }

@@ -21,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -190,4 +191,20 @@ class TaskControllerTest {
             throw new IllegalStateException("dato de prueba inválido", e);
         }
     }
+
+    @Test
+    void getOverdueTasks_retorna200YListaOrdenada() throws Exception {
+        LocalDate now = LocalDate.now();
+        Task antigua = new Task(10L, "Antigua", "desc", TaskStatus.IN_PROGRESS, Priority.MED, 1L, 1L, now.minusDays(5));
+        Task reciente = new Task(11L, "Reciente", "desc", TaskStatus.IN_PROGRESS, Priority.MED, 1L, 1L, now.minusDays(1));
+
+        when(taskService.vencidas()).thenReturn(List.of(antigua, reciente));
+
+        mockMvc.perform(get("/tasks/overdue"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].title").value("Antigua"))
+                .andExpect(jsonPath("$[1].title").value("Reciente"));
+    }
 }
+
