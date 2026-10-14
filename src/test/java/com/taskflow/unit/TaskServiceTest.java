@@ -171,25 +171,27 @@ class TaskServiceTest {
     class Vencidas {
 
         @Test
-        void vencidas_devuelveSoloVencidasYOrdenadas() throws TaskValidationException {
+        void vencidas_filtraYOrdenaSegunEspecificacion() throws TaskValidationException {
             LocalDate now = LocalDate.now();
-            // vencida más antigua (más atrasada)
-            Task vieja = new Task(10L, "Antigua vencida", "desc", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, now.minusDays(5));
-            // vencida más reciente
-            Task reciente = new Task(11L, "Reciente vencida", "desc", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, now.minusDays(1));
-            // pasada pero DONE -> no debe aparecer
-            Task hecha = new Task(12L, "Hecha pasada", "desc", TaskStatus.DONE, Priority.MED, PROYECTO, 1L, now.minusDays(2));
-            // sin dueDate -> no debe aparecer
-            Task sinFecha = new Task(13L, "Sin fecha", "desc", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, null);
+            // Construir el listado que devuelve el repositorio EN ESE ORDEN:
+            Task vencida1d = new Task(201L, "Vencida 1d", "desc", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, now.minusDays(1));
+            // 2) con fecha dentro de 3 días (no vencida)
+            Task futura3d = new Task(202L, "Futura 3d", "desc", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, now.plusDays(3));
+            // 3) vencida hace 10 días pero ya DONE (no debe incluirse)
+            Task hecha10d = new Task(203L, "Hecha 10d", "desc", TaskStatus.DONE, Priority.MED, PROYECTO, 1L, now.minusDays(10));
+            // 4) sin dueDate (no debe incluirse)
+            Task sinFecha = new Task(204L, "Sin fecha", "desc", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, null);
+            // 5) vencida hace 5 días (debe incluirse)
+            Task vencida5d = new Task(205L, "Vencida 5d", "desc", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, 1L, now.minusDays(5));
 
-            when(repository.findAll()).thenReturn(List.of(reciente, hecha, sinFecha, vieja));
+            when(repository.findAll()).thenReturn(List.of(vencida1d, futura3d, hecha10d, sinFecha, vencida5d));
 
             var resultado = service.vencidas();
 
-            // Solo las dos vencidas y en orden por dueDate ascendente (la más antigua primero)
+            // Solo las dos vencidas (1d y 5d) y ordenadas por dueDate ascendente: primero la de 5 días.
             assertEquals(2, resultado.size());
-            assertEquals(10L, resultado.get(0).getId());
-            assertEquals(11L, resultado.get(1).getId());
+            assertEquals(205L, resultado.get(0).getId());
+            assertEquals(201L, resultado.get(1).getId());
         }
     }
 }

@@ -193,18 +193,17 @@ class TaskControllerTest {
     }
 
     @Test
-    void getOverdueTasks_retorna200YListaOrdenada() throws Exception {
+    void getOverdueTasks_retorna200YUnaTarea() throws Exception {
         LocalDate now = LocalDate.now();
-        Task antigua = new Task(10L, "Antigua", "desc", TaskStatus.IN_PROGRESS, Priority.MED, 1L, 1L, now.minusDays(5));
-        Task reciente = new Task(11L, "Reciente", "desc", TaskStatus.IN_PROGRESS, Priority.MED, 1L, 1L, now.minusDays(1));
+        Task tarea = new Task(10L, "Antigua", "desc", TaskStatus.IN_PROGRESS, Priority.MED, 1L, 1L, now.minusDays(5));
 
-        when(taskService.vencidas()).thenReturn(List.of(antigua, reciente));
+        when(taskService.vencidas()).thenReturn(List.of(tarea));
 
         mockMvc.perform(get("/tasks/overdue"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].title").value("Antigua"))
-                .andExpect(jsonPath("$[1].title").value("Reciente"));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(10))
+                .andExpect(jsonPath("$[0].title").value("Antigua"));
     }
 }
 
