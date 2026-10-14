@@ -1,0 +1,54 @@
+ specs/overdue.md                                   | 42 ++++++++++++++++++++++
+ .../com/taskflow/controller/TaskController.java    | 10 +++++-
+ .../java/com/taskflow/service/TaskService.java     |  8 +++++
+ .../com/taskflow/slice/TaskControllerTest.java     | 17 +++++++++
+ .../java/com/taskflow/unit/TaskServiceTest.java    | 29 +++++++++++++++
+ 5 files changed, 105 insertions(+), 1 deletion(-)
+17	0	src/test/java/com/taskflow/slice/TaskControllerTest.java
+29	0	src/test/java/com/taskflow/unit/TaskServiceTest.java
+
++    /** Filtra las tareas vencidas según la regla del dominio y las ordena por fecha ascendente. */
++            // vencida más antigua (más atrasada)
++            // vencida más reciente
++            // pasada pero DONE -> no debe aparecer
++            // sin dueDate -> no debe aparecer
++            // Solo las dos vencidas y en orden por dueDate ascendente (la más antigua primero)
+
+MUTANTE: quitado .sorted(TaskOrders.POR_FECHA) de vencidas()
+
+[ERROR] Tests run: 8, Failures: 1, Errors: 0, Skipped: 0
+[INFO] BUILD FAILURE
+RESTAURADO: TaskService.java quedó exactamente como estaba.
+
+
++                .andExpect(jsonPath("$[1].title").value("Reciente"));
+
+
++                .filter(Task::estaVencida)
++                .sorted(TaskOrders.POR_FECHA)
+
+
+[INFO] Tests run: 69, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+16	0	src/test/java/com/taskflow/slice/TaskControllerTest.java
+31	0	src/test/java/com/taskflow/unit/TaskServiceTest.java
+
++    /** Filtra las tareas vencidas según la regla del dominio y las ordena por fecha ascendente. */
++            // Construir el listado que devuelve el repositorio EN ESE ORDEN:
++            // 2) con fecha dentro de 3 días (no vencida)
++            // 3) vencida hace 10 días pero ya DONE (no debe incluirse)
++            // 4) sin dueDate (no debe incluirse)
++            // 5) vencida hace 5 días (debe incluirse)
++            // Solo las dos vencidas (1d y 5d) y ordenadas por dueDate ascendente: primero la de 5 días.
+
+MUTANTE: quitado .sorted(TaskOrders.POR_FECHA) de vencidas()
+
+[ERROR] Tests run: 8, Failures: 1, Errors: 0, Skipped: 0
+[INFO] BUILD FAILURE
+RESTAURADO: TaskService.java quedó exactamente como estaba.
+
+
+[INFO] Tests run: 69, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
