@@ -130,4 +130,15 @@ public class TaskService {
                 .sorted(TaskOrders.POR_FECHA)
                 .toList();
     }
+
+    /**
+     * Lista las tareas sin responsable (assigneeId == null) en cualquier estado y ordenadas por fecha.
+     * Usa el predicado compartido ReportService.SIN_ASIGNAR y el comparator TaskOrders.POR_FECHA.
+     */
+    public List<Task> sinResponsable() {
+        return repository.findAll().stream()
+                .filter(ReportService.SIN_ASIGNAR)
+                .sorted(TaskOrders.POR_FECHA)
+                .toList();
+    }
 }

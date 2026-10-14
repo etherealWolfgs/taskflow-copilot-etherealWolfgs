@@ -133,6 +133,41 @@ class TaskServiceTest {
     }
 
     @Nested
+    @DisplayName("SinResponsable")
+    class SinResponsable {
+
+        @Test
+        void sinResponsable_filtraYOrdenaSegunEspecificacion() throws TaskValidationException {
+            LocalDate now = LocalDate.now();
+            // EN ESTE ORDEN lo que devuelve el repositorio: 10d, con assignee, sin fecha, 2d
+            Task sin10d = new Task(401L, "Sin 10d", "desc", TaskStatus.TODO, Priority.MED, PROYECTO, null, now.plusDays(10));
+            Task conAssignee = new Task(402L, "Con responsable", "desc", TaskStatus.TODO, Priority.MED, PROYECTO, 5L, now.plusDays(5));
+            Task sinSinFecha = new Task(403L, "Sin fecha", "desc", TaskStatus.TODO, Priority.MED, PROYECTO, null, null);
+            Task sin2d = new Task(404L, "Sin 2d", "desc", TaskStatus.TODO, Priority.MED, PROYECTO, null, now.plusDays(2));
+
+            when(repository.findAll()).thenReturn(List.of(sin10d, conAssignee, sinSinFecha, sin2d));
+
+            var resultado = service.sinResponsable();
+
+            var ids = resultado.stream().map(Task::getId).toList();
+            // Debe quedar: la de 2 días, la de 10 días y la sin fecha
+            assertEquals(List.of(404L, 401L, 403L), ids);
+        }
+
+        @Test
+        void sinResponsable_soloConResponsable_devuelveVacio() {
+            when(repository.findAll()).thenReturn(List.of(
+                    tarea(10L, "Con uno", 1L),
+                    tarea(11L, "Con dos", 2L)
+            ));
+
+            var resultado = service.sinResponsable();
+
+            assertEquals(0, resultado.size());
+        }
+    }
+
+    @Nested
     @DisplayName("eliminar")
     class Eliminar {
 
