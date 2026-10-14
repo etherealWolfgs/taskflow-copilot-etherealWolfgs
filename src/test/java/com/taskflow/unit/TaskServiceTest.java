@@ -140,9 +140,9 @@ class TaskServiceTest {
         void sinResponsable_filtraYOrdenaSegunEspecificacion() throws TaskValidationException {
             LocalDate now = LocalDate.now();
             // EN ESTE ORDEN lo que devuelve el repositorio: 10d, con assignee, sin fecha, 2d
-            Task sin10d = new Task(401L, "Sin 10d", "desc", TaskStatus.TODO, Priority.MED, PROYECTO, null, now.plusDays(10));
+            Task sin10d = new Task(401L, "Sin 10d", "desc", TaskStatus.IN_PROGRESS, Priority.MED, PROYECTO, null, now.plusDays(10));
             Task conAssignee = new Task(402L, "Con responsable", "desc", TaskStatus.TODO, Priority.MED, PROYECTO, 5L, now.plusDays(5));
-            Task sinSinFecha = new Task(403L, "Sin fecha", "desc", TaskStatus.TODO, Priority.MED, PROYECTO, null, null);
+            Task sinSinFecha = new Task(403L, "Sin fecha", "desc", TaskStatus.DONE, Priority.MED, PROYECTO, null, null);
             Task sin2d = new Task(404L, "Sin 2d", "desc", TaskStatus.TODO, Priority.MED, PROYECTO, null, now.plusDays(2));
 
             when(repository.findAll()).thenReturn(List.of(sin10d, conAssignee, sinSinFecha, sin2d));
