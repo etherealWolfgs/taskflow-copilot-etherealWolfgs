@@ -59,4 +59,38 @@ class ProjectResumenControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
     }
+
+    @Test
+    void getResumen_proyecto2_devuelveEjemplo() throws Exception {
+        when(projectService.buscarPorId(2L)).thenReturn(Optional.of(new Project(2L, "App Móvil", "d", 2L, null)));
+        when(projectService.resumen(any(Project.class))).thenReturn(new ProjectSummaryResponse(2L, "App Móvil", 4,
+                Map.of("TODO", 1L, "IN_PROGRESS", 2L, "DONE", 1L), 1L));
+
+        mockMvc.perform(get("/projects/2/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.projectId").value(2))
+                .andExpect(jsonPath("$.projectName").value("App Móvil"))
+                .andExpect(jsonPath("$.totalTasks").value(4))
+                .andExpect(jsonPath("$.byStatus.TODO").value(1))
+                .andExpect(jsonPath("$.byStatus.IN_PROGRESS").value(2))
+                .andExpect(jsonPath("$.byStatus.DONE").value(1))
+                .andExpect(jsonPath("$.overdue").value(1));
+    }
+
+    @Test
+    void getResumen_proyectoSinTareas_devuelveCeros() throws Exception {
+        when(projectService.buscarPorId(3L)).thenReturn(Optional.of(new Project(3L, "Legacy", "d", 1L, null)));
+        when(projectService.resumen(any(Project.class))).thenReturn(new ProjectSummaryResponse(3L, "Legacy", 0,
+                Map.of("TODO", 0L, "IN_PROGRESS", 0L, "DONE", 0L), 0L));
+
+        mockMvc.perform(get("/projects/3/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.projectId").value(3))
+                .andExpect(jsonPath("$.projectName").value("Legacy"))
+                .andExpect(jsonPath("$.totalTasks").value(0))
+                .andExpect(jsonPath("$.byStatus.TODO").value(0))
+                .andExpect(jsonPath("$.byStatus.IN_PROGRESS").value(0))
+                .andExpect(jsonPath("$.byStatus.DONE").value(0))
+                .andExpect(jsonPath("$.overdue").value(0));
+    }
 }
