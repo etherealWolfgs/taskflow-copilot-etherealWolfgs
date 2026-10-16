@@ -1,15 +1,21 @@
 package com.taskflow.service;
 
 import com.taskflow.dto.ProjectRequest;
+import com.taskflow.dto.ProjectSummaryResponse;
 import com.taskflow.exception.ProjectNotFoundException;
+import com.taskflow.mapper.ProjectMapper;
 import com.taskflow.model.Project;
 import com.taskflow.model.Task;
+import com.taskflow.model.TaskStatus;
 import com.taskflow.model.User;
 import com.taskflow.repository.ProjectRepository;
 import com.taskflow.repository.TaskRepository;
 import com.taskflow.repository.UserRepository;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -98,5 +104,22 @@ public class ProjectService {
                 .orElseThrow(() -> new ProjectNotFoundException(id));
         tareasDe(id).forEach(t -> taskRepository.deleteById(t.getId()));   // cascada manual (la FK obliga el orden)
         projectRepository.deleteById(id);
+    }
+
+    /**
+     * Resumen de un proyecto: conteo por estado y vencidas.
+     * Recibe el proyecto ya encontrado (el controller decide 404).
+     */
+    public ProjectSummaryResponse resumen(Project proyecto) {
+        List<Task> tareas = taskRepository.findByProjectId(proyecto.getId());
+        long total = tareas.size();
+        Map<String, Long> byStatus = tareas.stream()
+                .collect(Collectors.groupingBy(t -> t.getStatus().name(), Collectors.counting()));
+        // Asegurar las tres claves TODO, IN_PROGRESS, DONE
+        for (TaskStatus s : TaskStatus.values()) {
+            byStatus.putIfAbsent(s.name(), 0L);
+        }
+        long overdue = tareas.stream().filter(Task::estaVencida).count();
+        return ProjectMapper.aResumen(proyecto.getId(), proyecto.getName(), total, byStatus, overdue);
     }
 }
