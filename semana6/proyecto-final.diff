@@ -1,0 +1,249 @@
+diff --git a/src/main/java/com/taskflow/controller/ReportController.java b/src/main/java/com/taskflow/controller/ReportController.java
+new file mode 100644
+index 0000000..7d6b457
+--- /dev/null
++++ b/src/main/java/com/taskflow/controller/ReportController.java
+@@ -0,0 +1,31 @@
++package com.taskflow.controller;
++
++import com.taskflow.dto.ProjectProgressResponse;
++import com.taskflow.service.ProjectService;
++import io.swagger.v3.oas.annotations.Operation;
++import io.swagger.v3.oas.annotations.tags.Tag;
++import org.springframework.web.bind.annotation.GetMapping;
++import org.springframework.web.bind.annotation.RestController;
++
++import java.util.List;
++
++/**
++ * ReportController — endpoints de reportes agregados a la API.
++ */
++@RestController
++@Tag(name = "Reports", description = "Reportes agregados: progreso por proyecto y similares.")
++public class ReportController {
++
++    private final ProjectService projectService;
++
++    public ReportController(ProjectService projectService) {
++        this.projectService = projectService;
++    }
++
++    @Operation(summary = "Progreso por proyecto",
++            description = "Devuelve para cada proyecto el total de tareas, cuántas están DONE y el porcentaje completado (un decimal).")
++    @GetMapping("/reports/progress")
++    public List<ProjectProgressResponse> getProgress() {
++        return projectService.progresoPorProyecto();
++    }
++}
+diff --git a/src/main/java/com/taskflow/dto/ProjectProgressResponse.java b/src/main/java/com/taskflow/dto/ProjectProgressResponse.java
+new file mode 100644
+index 0000000..57ea540
+--- /dev/null
++++ b/src/main/java/com/taskflow/dto/ProjectProgressResponse.java
+@@ -0,0 +1,9 @@
++package com.taskflow.dto;
++
++/**
++ * ProjectProgressResponse — DTO de salida para el reporte de progreso por proyecto.
++ * Contiene identificador, nombre, conteos y el porcentaje completado redondeado a un decimal.
++ */
++public record ProjectProgressResponse(Long projectId, String projectName, long totalTasks,
++                                      long doneTasks, double percentDone) {
++}
+diff --git a/src/main/java/com/taskflow/mapper/ProjectMapper.java b/src/main/java/com/taskflow/mapper/ProjectMapper.java
+index b66705c..60aae78 100644
+--- a/src/main/java/com/taskflow/mapper/ProjectMapper.java
++++ b/src/main/java/com/taskflow/mapper/ProjectMapper.java
+@@ -29,4 +29,15 @@ public final class ProjectMapper {
+                                                    long overdue) {
+         return new ProjectSummaryResponse(projectId, projectName, totalTasks, byStatus, overdue);
+     }
++
++    /**
++     * Mapea al DTO de progreso de proyecto usado por GET /reports/progress. El servicio calcula
++     * los conteos y el porcentaje y lo pasa aquí.
++     */
++    public static com.taskflow.dto.ProjectProgressResponse aProgreso(Project proyecto, long totalTasks,
++                                                                     long doneTasks, double percentDone) {
++        return new com.taskflow.dto.ProjectProgressResponse(proyecto.getId(), proyecto.getName(),
++                totalTasks, doneTasks, percentDone);
++    }
+ }
++
+diff --git a/src/main/java/com/taskflow/service/ProjectService.java b/src/main/java/com/taskflow/service/ProjectService.java
+index b159eb8..8aa5e2b 100644
+--- a/src/main/java/com/taskflow/service/ProjectService.java
++++ b/src/main/java/com/taskflow/service/ProjectService.java
+@@ -122,4 +122,29 @@ public class ProjectService {
+         long overdue = tareas.stream().filter(Task::estaVencida).count();
+         return ProjectMapper.aResumen(proyecto.getId(), proyecto.getName(), total, byStatus, overdue);
+     }
++
++    /**
++     * Calcula el progreso por proyecto: todos los proyectos, conteos de tareas y porcentaje redondeado
++     * a un decimal. Reglas de negocio: incluye proyectos sin tareas; porcentaje 0.0 cuando totalTasks==0.
++     */
++    public java.util.List<com.taskflow.dto.ProjectProgressResponse> progresoPorProyecto() {
++        java.util.List<Project> proyectos = new java.util.ArrayList<>(projectRepository.findAll());
++        // Ordenar por id asc (regla 4)
++        proyectos.sort(java.util.Comparator.comparing(Project::getId));
++        java.util.List<com.taskflow.dto.ProjectProgressResponse> salida = new java.util.ArrayList<>();
++        for (Project p : proyectos) {
++            java.util.List<Task> tareas = taskRepository.findByProjectId(p.getId());
++            long total = tareas.size();
++            long done = tareas.stream().filter(t -> t.getStatus() == TaskStatus.DONE).count();
++            double percent;
++            if (total == 0) {
++                percent = 0.0;
++            } else {
++                percent = (double) Math.round((done * 1000.0 / total)) / 10.0; // redondeo a 1 decimal
++            }
++            salida.add(ProjectMapper.aProgreso(p, total, done, percent));
++        }
++        return salida;
++    }
+ }
++
+diff --git a/src/test/java/com/taskflow/slice/ProgresoProyectosControllerTest.java b/src/test/java/com/taskflow/slice/ProgresoProyectosControllerTest.java
+new file mode 100644
+index 0000000..4503142
+--- /dev/null
++++ b/src/test/java/com/taskflow/slice/ProgresoProyectosControllerTest.java
+@@ -0,0 +1,50 @@
++package com.taskflow.slice;
++
++import com.taskflow.controller.ReportController;
++import com.taskflow.dto.ProjectProgressResponse;
++import com.taskflow.security.JwtAuthenticationFilter;
++import com.taskflow.service.ProjectService;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
++import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
++import org.springframework.http.MediaType;
++import org.springframework.test.context.bean.override.mockito.MockitoBean;
++import org.springframework.test.web.servlet.MockMvc;
++
++import java.util.List;
++
++import static org.mockito.Mockito.when;
++import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
++
++@WebMvcTest(ReportController.class)
++@AutoConfigureMockMvc(addFilters = false)
++class ProgresoProyectosControllerTest {
++
++    @Autowired
++    private MockMvc mockMvc;
++
++    @MockitoBean
++    private ProjectService projectService;
++
++    @MockitoBean
++    private JwtAuthenticationFilter jwtAuthenticationFilter;
++
++    @Test
++    void getProgress_retorna200YJsonConCampos() throws Exception {
++        when(projectService.progresoPorProyecto()).thenReturn(List.of(
++                new ProjectProgressResponse(1L, "Plataforma TaskFlow", 5L, 1L, 20.0),
++                new ProjectProgressResponse(2L, "App Móvil", 4L, 1L, 25.0)
++        ));
++
++        mockMvc.perform(get("/reports/progress").contentType(MediaType.APPLICATION_JSON))
++                .andExpect(status().isOk())
++                .andExpect(jsonPath("$.length()").value(2))
++                .andExpect(jsonPath("$[0].projectId").value(1))
++                .andExpect(jsonPath("$[0].projectName").value("Plataforma TaskFlow"))
++                .andExpect(jsonPath("$[0].percentDone").value(20.0))
++                .andExpect(jsonPath("$[1].totalTasks").value(4));
++    }
++}
+diff --git a/src/test/java/com/taskflow/unit/ProgresoProyectosServiceTest.java b/src/test/java/com/taskflow/unit/ProgresoProyectosServiceTest.java
+new file mode 100644
+index 0000000..5c0766b
+--- /dev/null
++++ b/src/test/java/com/taskflow/unit/ProgresoProyectosServiceTest.java
+@@ -0,0 +1,81 @@
++package com.taskflow.unit;
++
++import com.taskflow.dto.ProjectProgressResponse;
++import com.taskflow.model.Project;
++import com.taskflow.model.Task;
++import com.taskflow.model.TaskStatus;
++import com.taskflow.model.Priority;
++import com.taskflow.repository.ProjectRepository;
++import com.taskflow.repository.TaskRepository;
++import com.taskflow.repository.UserRepository;
++import com.taskflow.service.ProjectService;
++import com.taskflow.exception.TaskValidationException;
++import org.junit.jupiter.api.Test;
++import org.junit.jupiter.api.extension.ExtendWith;
++import org.mockito.InjectMocks;
++import org.mockito.Mock;
++import org.mockito.junit.jupiter.MockitoExtension;
++
++import java.time.LocalDate;
++import java.util.List;
++import java.util.Optional;
++
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.mockito.Mockito.when;
++
++@ExtendWith(MockitoExtension.class)
++class ProgresoProyectosServiceTest {
++
++    @Mock
++    private ProjectRepository projectRepository;
++
++    @Mock
++    private TaskRepository taskRepository;
++
++    @Mock
++    private UserRepository userRepository;
++
++    @InjectMocks
++    private ProjectService projectService;
++
++    @Test
++    void progreso_por_varios_proyectos_redondeo_y_orden() throws Exception {
++        // proyectos devueltos en orden 3,1,2 (para probar el resort en el service)
++        Project p1 = new Project(1L, "P1", "d", 1L, null);
++        Project p2 = new Project(2L, "P2", "d", 1L, null);
++        Project p3 = new Project(3L, "P3", "d", 1L, null);
++
++        when(projectRepository.findAll()).thenReturn(List.of(p3, p1, p2));
++
++        // p1: 5 tareas, 1 DONE -> 20.0
++        List<Task> tareasP1 = List.of(
++                new Task(10L, "Tarea1", "d", TaskStatus.DONE, Priority.MED, 1L, 1L, LocalDate.now()),
++                new Task(11L, "Tarea2", "d", TaskStatus.TODO, Priority.MED, 1L, 1L, null),
++                new Task(12L, "Tarea3", "d", TaskStatus.TODO, Priority.MED, 1L, 1L, null),
++                new Task(13L, "Tarea4", "d", TaskStatus.TODO, Priority.MED, 1L, 1L, null),
++                new Task(14L, "Tarea5", "d", TaskStatus.TODO, Priority.MED, 1L, 1L, null)
++        );
++        when(taskRepository.findByProjectId(1L)).thenReturn(tareasP1);
++
++        // p2: 3 tareas, 1 DONE -> 33.3 (redondeo)
++        List<Task> tareasP2 = List.of(
++                new Task(20L, "TareaA", "d", TaskStatus.DONE, Priority.MED, 2L, 1L, null),
++                new Task(21L, "TareaB", "d", TaskStatus.TODO, Priority.MED, 2L, 1L, null),
++                new Task(22L, "TareaC", "d", TaskStatus.TODO, Priority.MED, 2L, 1L, null)
++        );
++        when(taskRepository.findByProjectId(2L)).thenReturn(tareasP2);
++
++        // p3: sin tareas -> 0.0
++        when(taskRepository.findByProjectId(3L)).thenReturn(List.of());
++
++        java.util.List<ProjectProgressResponse> res = projectService.progresoPorProyecto();
++        // debe venir ordenado 1,2,3
++        assertEquals(3, res.size());
++        assertEquals(1L, res.get(0).projectId());
++        assertEquals(20.0, res.get(0).percentDone());
++        assertEquals(2L, res.get(1).projectId());
++        assertEquals(33.3, res.get(1).percentDone());
++        assertEquals(3L, res.get(2).projectId());
++        assertEquals(0.0, res.get(2).percentDone());
++    }
++}

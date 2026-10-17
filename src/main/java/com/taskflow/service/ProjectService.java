@@ -122,4 +122,29 @@ public class ProjectService {
         long overdue = tareas.stream().filter(Task::estaVencida).count();
         return ProjectMapper.aResumen(proyecto.getId(), proyecto.getName(), total, byStatus, overdue);
     }
+
+    /**
+     * Calcula el progreso por proyecto: todos los proyectos, conteos de tareas y porcentaje redondeado
+     * a un decimal. Reglas de negocio: incluye proyectos sin tareas; porcentaje 0.0 cuando totalTasks==0.
+     */
+    public java.util.List<com.taskflow.dto.ProjectProgressResponse> progresoPorProyecto() {
+        java.util.List<Project> proyectos = new java.util.ArrayList<>(projectRepository.findAll());
+        // Ordenar por id asc (regla 4)
+        proyectos.sort(java.util.Comparator.comparing(Project::getId));
+        java.util.List<com.taskflow.dto.ProjectProgressResponse> salida = new java.util.ArrayList<>();
+        for (Project p : proyectos) {
+            java.util.List<Task> tareas = taskRepository.findByProjectId(p.getId());
+            long total = tareas.size();
+            long done = tareas.stream().filter(t -> t.getStatus() == TaskStatus.DONE).count();
+            double percent;
+            if (total == 0) {
+                percent = 0.0;
+            } else {
+                percent = (double) Math.round((done * 1000.0 / total)) / 10.0; // redondeo a 1 decimal
+            }
+            salida.add(ProjectMapper.aProgreso(p, total, done, percent));
+        }
+        return salida;
+    }
 }
+

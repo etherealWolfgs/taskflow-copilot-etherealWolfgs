@@ -29,4 +29,15 @@ public final class ProjectMapper {
                                                    long overdue) {
         return new ProjectSummaryResponse(projectId, projectName, totalTasks, byStatus, overdue);
     }
+
+    /**
+     * Mapea al DTO de progreso de proyecto usado por GET /reports/progress. El servicio calcula
+     * los conteos y el porcentaje y lo pasa aquí.
+     */
+    public static com.taskflow.dto.ProjectProgressResponse aProgreso(Project proyecto, long totalTasks,
+                                                                     long doneTasks, double percentDone) {
+        return new com.taskflow.dto.ProjectProgressResponse(proyecto.getId(), proyecto.getName(),
+                totalTasks, doneTasks, percentDone);
+    }
 }
+
