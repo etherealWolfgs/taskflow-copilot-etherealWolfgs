@@ -1,10 +1,10 @@
 # Copilot CLI Session
 
 > [!NOTE]
-> - **Session ID:** `038b71a6-71cc-4396-bdb2-ef2a8315dbcd`  
-> - **Started:** 17/10/2026, 1:28:14 p.m.  
-> - **Duration:** 43s  
-> - **Exported:** 17/10/2026, 1:28:58 p.m.  
+> - **Session ID:** `13bc4eb0-a0cb-4dd8-bf3d-2411e2b66962`  
+> - **Started:** 17/10/2026, 1:36:40 p.m.  
+> - **Duration:** 34s  
+> - **Exported:** 17/10/2026, 1:37:15 p.m.  
 
 ---
 
@@ -12,7 +12,7 @@
 
 ### User
 
-Revisa semana6/proyecto-final.diff contra la especificación specs/progress.md.
+Revisa semana6/proyecto-final.diff contra la especificación specs/\<feature>.md.
 
 ---
 
@@ -20,7 +20,7 @@ Revisa semana6/proyecto-final.diff contra la especificación specs/progress.md.
 
 ### Copilot
 
-Leeré en paralelo el diff solicitado y la especificación para comparar cambios con el contrato. Esto permite identificar archivos afectados y luego abrir los archivos modificados si hace falta. Ejecutando dos lecturas en paralelo.
+Leeré el diff y listaré el directorio specs para identificar la spec correspondiente; esto permite comparar cambios con la especificación antes de revisar. Ejecutando dos lecturas en paralelo: el diff y la lista de specs.
 
 ---
 
@@ -296,6 +296,32 @@ index 0000000..5c0766b
 
 ### `view`
 
+**view the file at C:\Users\Lenovo\taskflow-copilot-etherealWolfgs\specs.**
+
+C:\Users\Lenovo\taskflow-copilot-etherealWolfgs\specs
+
+```
+overdue.md
+progress.md
+summary.md
+unassigned.md
+```
+
+
+---
+
+<sub>12s</sub>
+
+### Copilot
+
+Leeré specs/progress.md para comparar la especificación con los cambios del diff. Ejecutando lectura del archivo.
+
+---
+
+<sub>12s</sub>
+
+### `view`
+
 **view the file at C:\Users\Lenovo\taskflow-copilot-etherealWolfgs\specs\progress.md.**
 
 C:\Users\Lenovo\taskflow-copilot-etherealWolfgs\specs\progress.md
@@ -411,403 +437,11 @@ no el agente: no cuentan contra esta restricción.
 
 ### Copilot
 
-Abrir archivos relevantes para contexto: Project.java, Task.java, TaskStatus.java, ProjectService.java y ProjectMapper.java actuales. Esto permite verificar constructores, métodos y firmas usados por el diff. Ejecutando varias lecturas en paralelo.
+Abrir los archivos ProjectMapper.java y ProjectService.java actuales para comparar el contexto y las firmas existentes. Ejecutando dos lecturas en paralelo.
 
 ---
 
 <sub>18s</sub>
-
-### `view`
-
-**view the file at C:\Users\Lenovo\taskflow-copilot-etherealWolfgs\src\main\java\com\taskflow\model\Project.java.**
-
-C:\Users\Lenovo\taskflow-copilot-etherealWolfgs\src\main\java\com\taskflow\model\Project.java
-
-<details>
-<summary>66 lines</summary>
-
-```
-package com.taskflow.model;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-
-import java.time.LocalDate;
-
-/**
- * Project — un proyecto dueño de tareas (entidad JPA).
- *
- * El dueño se guarda como 'Long ownerId', no como un objeto User: forma (id, name, description,
- * ownerId, createdAt). "El repositorio/BD guarda ids": la referencia al dueño, en la BD, es una
- * columna Long.
- *
- * Como Task: @Entity + @Table(name = "projects"), @Id @GeneratedValue(IDENTITY), constructor no-arg
- * protegido para JPA. El id es 'Long' (envoltorio), no 'long' primitivo: un id nuevo es null hasta
- * que la BD lo asigna (sin valores mágicos como 0L para "aún sin id").
- *
- * ownerId NO lleva @ManyToOne (juicio, como assigneeId en Task): no navegamos al User dueño al
- * listar proyectos; con el id basta. Se mapea objeto cuando se NAVEGA, no cuando solo se REFERENCIA.
- */
-@Entity
-@Table(name = "projects")
-public class Project {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
-    private String name;
-
-    private String description;
-
-    private Long ownerId;
-
-    private LocalDate createdAt;
-
-    /** Constructor no-arg protegido: EXCLUSIVO de JPA (rehidratación por reflexión). */
-    protected Project() {
-        // solo para JPA
-    }
-
-    public Project(Long id, String name, String description, Long ownerId, LocalDate createdAt) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.ownerId = ownerId;
-        this.createdAt = createdAt;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public Long getOwnerId() {
-        return ownerId;
-    }
-
-    public LocalDate getCreatedAt() {
-        return createdAt;
-    }
-
-    @Override
-    public String toString() {
-        return "Project{id=" + id + ", name='" + name + '\''
-                + ", ownerId=" + ownerId
-                + ", createdAt=" + createdAt + '}';
-    }
-}
-```
-
-</details>
-
-
----
-
-<sub>19s</sub>
-
-### `view`
-
-**view the file at C:\Users\Lenovo\taskflow-copilot-etherealWolfgs\src\main\java\com\taskflow\model\Task.java.**
-
-C:\Users\Lenovo\taskflow-copilot-etherealWolfgs\src\main\java\com\taskflow\model\Task.java
-
-<details>
-<summary>225 lines</summary>
-
-```
-package com.taskflow.model;
-
-import com.taskflow.exception.TaskValidationException;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-
-import java.time.LocalDate;
-import java.util.Objects;
-
-/**
- * Task — entidad central del dominio TaskFlow (persistida con JPA).
- *
- * Es una clase de dominio normal (8 campos, validaciones, comportamiento): NO hay un "modelo de
- * BD" aparte. Lo que la hace entidad, todo por anotación:
- *   - @Entity + @Table(name = "tasks"): esta clase mapea a la tabla TASKS.
- *   - @Id + @GeneratedValue(IDENTITY): el id lo asigna la BD (columna autoincremental). Nada de
- *     secuencia manual en Java: el id lo pone la BD y nadie más.
- *   - @Enumerated(STRING) en status y priority: se guardan como TEXTO ('TODO'), NUNCA como ORDINAL
- *     (0,1,2): reordenar o insertar un enum corrompería datos históricos. El orden LOW,MED,HIGH
- *     es contrato del SORT (compareTo), no del almacenamiento.
- *   - relación @ManyToOne Task->Project (patrón "asociación de solo lectura"): la COLUMNA la
- *     manda el escalar 'projectId' (por eso Task.crear, TaskService, mappers y DTOs hablan de projectId);
- *     el objeto 'project' solo NAVEGA. Frase ancla: "la columna manda; el objeto navega".
- *
- * Tensión JPA vs validaciones: JPA rehidrata
- * por reflexión con un constructor sin args protegido, SIN pasar por las validaciones. Está bien:
- * Task.crear(...) sigue siendo el ÚNICO camino de CREACIÓN de negocio; JPA solo REHIDRATA datos que
- * ya existían (la distinción crear/rehidratar).
- *
- * OJO: las columnas persistentes NO pueden ser 'final' (JPA las escribe por reflexión tras el no-arg);
- * por eso title/description/projectId/dueDate no son 'final'. La inmutabilidad
- * de negocio la sigue garantizando la ausencia de setters públicos para esos campos.
- */
-@Entity
-@Table(name = "tasks")
-public class Task implements Comparable<Task> {
-
-    // Reglas de longitud del título (regla de negocio).
-    private static final int TITULO_MIN = 3;
-    private static final int TITULO_MAX = 120;
-
-    // id nace null; lo asigna la BD (IDENTITY). Ver setId (uso interno de JPA/repo).
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false, length = 120)
-    private String title;
-
-    private String description;                 // por convención -> columna DESCRIPTION
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TaskStatus status;                  // texto 'TODO'/'IN_PROGRESS'/'DONE' (nunca 0/1/2)
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Priority priority;                  // texto 'LOW'/'MED'/'HIGH'
-
-    // La COLUMNA project_id la posee este escalar (insertable/updatable por default). Sigue siendo
-    // el dueño: Task.crear, el mapper y el servicio hablan con projectId, no con el objeto.
-    @Column(name = "project_id", nullable = false)
-    private Long projectId;
-
-    // assigneeId se queda Long a secas (juicio explícito): es nullable, NUNCA navegamos al User
-    // completo al leer tareas, y las derived queries operan igual. No toda FK necesita ser objeto:
-    // mapea objeto cuando NAVEGAS, deja el id cuando solo REFERENCIAS.
-    @Column(name = "assignee_id")
-    private Long assigneeId;
-
-    private LocalDate dueDate;                  // por convención -> columna DUE_DATE (camelCase->snake_case)
-
-    /**
-     * Asociación de SOLO LECTURA hacia el proyecto. Comparte la MISMA columna project_id con
-     * el escalar de arriba, pero marcada insertable=false/updatable=false: no escribe la columna (el
-     * escalar lo hace), solo permite NAVEGAR (task.getProject().getName()). LAZY: no se carga hasta
-     * que se toca — y fuera de una sesión abierta, tocarla lanza LazyInitializationException (por eso
-     * la API responde con DTOs, nunca con la entidad).
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id", insertable = false, updatable = false)
-    private Project project;
-
-    /**
-     * Constructor NO-ARG protegido: EXCLUSIVO de JPA (rehidratación por reflexión). Nunca es un camino
-     * de creación de negocio. Su existencia es obligatoria para cualquier @Entity: sin él, al arrancar
-     * Hibernate lanza "No default constructor for entity: com.taskflow.model.Task".
-     */
-    protected Task() {
-        // solo para JPA: rehidratación, nunca creación de negocio
-    }
-
-    /**
-     * Constructor de REHIDRATACIÓN: reconstruye una tarea que YA existía (semilla del DataSeeder,
-     * datos releídos). Valida las INVARIANTES que siempre deben cumplirse (título y proyecto), pero
-     * NO la regla temporal de dueDate: una tarea vencida es un dato válido que hay que poder releer.
-     */
-    public Task(Long id, String title, String description, TaskStatus status,
-                Priority priority, Long projectId, Long assigneeId, LocalDate dueDate)
-            throws TaskValidationException {
-        // Invariante 1: título obligatorio, 3-120 chars.
-        if (title == null || title.isBlank()) {
-            throw new TaskValidationException("El título es obligatorio (no puede ir vacío).");
-        }
-        if (title.length() < TITULO_MIN || title.length() > TITULO_MAX) {
-            throw new TaskValidationException(
-                    "El título debe tener entre " + TITULO_MIN + " y " + TITULO_MAX
-                            + " caracteres; recibí " + title.length() + ": \"" + title + "\".");
-        }
-        // Invariante 2: una tarea no puede existir sin proyecto (regla de negocio).
-        if (projectId == null) {
-            throw new TaskValidationException(
-                    "Una tarea no puede existir sin proyecto (projectId == null).");
-        }
-        this.id = id;
-        this.title = title;
-        this.description = description;
-        this.status = status;
-        this.priority = priority;
-        this.projectId = projectId;
-        this.assigneeId = assigneeId;
-        this.dueDate = dueDate;
-    }
-
-    /**
-     * Factory de CREACIÓN de negocio: añade la regla temporal (dueDate no en el pasado) y delega en
-     * el constructor. id nace null, status nace TODO. La usan el mapper y el servicio tal cual: que
-     * Task sea @Entity no cambia esta firma.
-     */
-    public static Task crear(String title, String description, Priority priority,
-                             LocalDate dueDate, Long projectId, Long assigneeId)
-            throws TaskValidationException {
-        if (dueDate != null && dueDate.isBefore(LocalDate.now())) {
-            throw new TaskValidationException(
-                    "La fecha límite no puede estar en el pasado: " + dueDate + ".");
-        }
-        return new Task(null, title, description, TaskStatus.TODO, priority, projectId, assigneeId, dueDate);
-    }
-
-    // ---- Comportamiento: vive CON los datos ----
-
-    /** true si tiene fecha, ya pasó, y la tarea aún no está terminada. */
-    public boolean estaVencida() {
-        return dueDate != null && dueDate.isBefore(LocalDate.now()) && status != TaskStatus.DONE;
-    }
-
-    // ---- Getters ----
-
-    public Long getId() {
-        return id;
-    }
-
-    /** Uso interno (JPA/repo) para el id autoincremental. Nadie más lo llama a mano. */
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public TaskStatus getStatus() {
-        return status;
-    }
-
-    public Priority getPriority() {
-        return priority;
-    }
-
-    public Long getProjectId() {
-        return projectId;
-    }
-
-    public Long getAssigneeId() {
-        return assigneeId;
-    }
-
-    public LocalDate getDueDate() {
-        return dueDate;
-    }
-
-    /**
-     * Navega al proyecto asociado (asociación de solo lectura). Fuera de una sesión JPA abierta puede
-     * lanzar LazyInitializationException (por eso la API expone DTOs, no la entidad). En el runtime
-     * nadie del camino principal lo usa; existe para NAVEGAR cuando haga falta.
-     */
-    public Project getProject() {
-        return project;
-    }
-
-    // ---- Setters SOLO donde el dominio muta ----
-
-    /**
-     * Cambia el estado aplicando la regla de negocio: no se puede pasar a DONE una tarea sin
-     * responsable (assigneeId). La regla vive AQUÍ, no en el servicio ni en el controller.
-     */
-    public void setStatus(TaskStatus status) throws TaskValidationException {
-        if (status == TaskStatus.DONE && assigneeId == null) {
-            throw new TaskValidationException(
-                    "No se puede marcar como " + TaskStatus.DONE
-                            + " una tarea sin responsable: \"" + title + "\".");
-        }
-        this.status = status;
-    }
-
-    public void setPriority(Priority priority) {
-        this.priority = priority;
-    }
-
-    public void setAssigneeId(Long assigneeId) {
-        this.assigneeId = assigneeId;
-    }
-
-    // ---- Identidad de ENTIDAD por id (literalmente lo que hace JPA) ----
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Task otra = (Task) o;
-        return Objects.equals(id, otra.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
-    }
-
-    // ---- Orden natural por prioridad (Comparable) ----
-
-    @Override
-    public int compareTo(Task otra) {
-        return this.priority.compareTo(otra.priority);
-    }
-
-    @Override
-    public String toString() {
-        return "Task{id=" + id
-                + ", title='" + title + '\''
-                + ", status=" + status
-                + ", priority=" + priority
-                + ", assigneeId=" + (assigneeId == null ? "sin asignar" : assigneeId)
-                + ", dueDate=" + (dueDate == null ? "sin fecha" : dueDate)
-                + (estaVencida() ? " *VENCIDA*" : "")
-                + '}';
-    }
-}
-```
-
-</details>
-
-
----
-
-<sub>23s</sub>
-
-### Copilot
-
-Opening ProjectMapper.java and ProjectService.java in repository to compare with diff changes.
-
----
-
-<sub>23s</sub>
 
 ### `view`
 
@@ -868,13 +502,13 @@ public final class ProjectMapper {
 
 ---
 
-<sub>24s</sub>
+<sub>20s</sub>
 
 ### `view`
 
 **view the file at C:\Users\Lenovo\taskflow-copilot-etherealWolfgs\src\main\java\com\taskflow\service\ProjectService.java.**
 
-C:\Users\Lenovo\taskflow-copilot-etherealWolfgs\src\main\java\com\taskflow\service\ProjectService.java
+C:\Users\Lenovo\taskflow-copilot-etherealWolfgs\src\main\java\com\taskflow\service\ProjectService.java (lines 1-220)
 
 <details>
 <summary>135 lines</summary>
@@ -1036,25 +670,21 @@ public class ProjectService {
 
 ---
 
-<sub>43s</sub>
+<sub>34s</sub>
 
 ### Copilot
 
-Resumen breve: la diff implementa exactamente lo solicitado (DTO record, mapper, service, controller y dos tests). No hay fallos que bloqueen merge; solo dos observaciones menores.
+Resumen breve: leída la diff y la spec; los cambios implementan la especificación exactamente y añaden los dos tests pedidos. Veredicto: APROBADO.
 
-| # | Gravedad | Archivo:línea | Punto de la checklist | Qué pasa | Qué harías |
-|---|---|---|---|---|---|
-| 1 | Sugerencia | src/main/java/com/taskflow/mapper/ProjectMapper.java:+ | Convenciones (imports/mapeo) | El método aProgreso usa el tipo totalmente cualificado (com.taskflow.dto.ProjectProgressResponse) en vez de un import. | Importar ProjectProgressResponse para mejorar legibilidad. |
-| 2 | Sugerencia | src/test/java/.../ProgresoProyectosControllerTest.java (nuevo) | Tests que prueban algo / Seguridad | No hay test que valide el comportamiento ante petición sin token (401) ni un test de integración que verifique los valores contra la semilla H2. | Añadir un slice/integration test que verifique 401 sin token y un IT/smoke que arranque la app con h2 y compruebe los valores seed (según "Resultado esperado con la semilla"). |
+| # | Gravedad | Archivo:línea | Punto checklist | Qué pasa | Qué harías |
+|---|---:|---|---|---|---|
+| 1 | Sugerencia | src/main/java/com/taskflow/mapper/ProjectMapper.java:29-37 | Convenciones / Mapper | Se usa tipo fully-qualified en aProgreso en vez de importar el DTO. | Importar com.taskflow.dto.ProjectProgressResponse para consistencia. No obligatorio. |
+| 2 | Sugerencia | src/main/java/com/taskflow/service/ProjectService.java:122-... | Regla cálculo / Redondeo | Cálculo y redondeo implementados con (Math.round(done*1000.0/total)/10.0) — correcto y cubre casos del spec. | Ninguno necesario; es legible pero podría comentarse la fórmula. |
 
 Casos sin test:
-- GET /reports/progress sin token → 401 (no cubierto).
-- Escenario end-to-end con la semilla H2 (valores y orden esperados) → no cubierto.
-- Efecto de un PATCH que marque una tarea DONE y cambio en percentDone (mencionado en la spec) → no cubierto.
+- ninguno (las dos pruebas requeridas — unit + slice — están presentes y cubren orden, redondeo, proyecto sin tareas y la forma del JSON).
 
-Veredicto: APROBADO
-
-Si se desea, puedo crear los tests faltantes (401 y el IT con perfil h2) y proponer el pequeño import en ProjectMapper; indícalo y los añado.
+Veredicto: APROBADO.
 
 ---
 
