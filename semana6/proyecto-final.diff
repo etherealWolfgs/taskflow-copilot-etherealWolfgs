@@ -106,10 +106,10 @@ index b159eb8..8aa5e2b 100644
 +
 diff --git a/src/test/java/com/taskflow/slice/ProgresoProyectosControllerTest.java b/src/test/java/com/taskflow/slice/ProgresoProyectosControllerTest.java
 new file mode 100644
-index 0000000..4503142
+index 0000000..f405d5b
 --- /dev/null
 +++ b/src/test/java/com/taskflow/slice/ProgresoProyectosControllerTest.java
-@@ -0,0 +1,50 @@
+@@ -0,0 +1,52 @@
 +package com.taskflow.slice;
 +
 +import com.taskflow.controller.ReportController;
@@ -156,8 +156,10 @@ index 0000000..4503142
 +                .andExpect(jsonPath("$.length()").value(2))
 +                .andExpect(jsonPath("$[0].projectId").value(1))
 +                .andExpect(jsonPath("$[0].projectName").value("Plataforma TaskFlow"))
++                .andExpect(jsonPath("$[0].doneTasks").value(1))
 +                .andExpect(jsonPath("$[0].percentDone").value(20.0))
-+                .andExpect(jsonPath("$[1].totalTasks").value(4));
++                .andExpect(jsonPath("$[1].totalTasks").value(4))
++                .andExpect(jsonPath("$[1].doneTasks").value(1));
 +    }
 +}
 diff --git a/src/test/java/com/taskflow/unit/ProgresoProyectosServiceTest.java b/src/test/java/com/taskflow/unit/ProgresoProyectosServiceTest.java

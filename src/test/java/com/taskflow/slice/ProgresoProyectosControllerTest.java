@@ -44,7 +44,9 @@ class ProgresoProyectosControllerTest {
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].projectId").value(1))
                 .andExpect(jsonPath("$[0].projectName").value("Plataforma TaskFlow"))
+                .andExpect(jsonPath("$[0].doneTasks").value(1))
                 .andExpect(jsonPath("$[0].percentDone").value(20.0))
-                .andExpect(jsonPath("$[1].totalTasks").value(4));
+                .andExpect(jsonPath("$[1].totalTasks").value(4))
+                .andExpect(jsonPath("$[1].doneTasks").value(1));
     }
 }
