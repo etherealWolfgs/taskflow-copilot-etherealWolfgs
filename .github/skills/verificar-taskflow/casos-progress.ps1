@@ -38,7 +38,7 @@ Informar 'El proyecto 1 se llama «Plataforma TaskFlow»' "$($r1.projectName)" '
 
 # 3. Terminar la tarea 1 (tiene responsable, así que el PATCH pasa) sube el proyecto 1 a 2 de 5 = 40.
 $cambio = Invoke-RestMethod -Method Patch -Uri "$base/tasks/1/status" -Headers $auth -ContentType 'application/json' `
-    -Body '{"status": "DONE"}' -SkipHttpErrorCheck -StatusCodeVariable codigoCambio
+    -Body '{"status": "DONE"}' -TimeoutSec 10 -SkipHttpErrorCheck -StatusCodeVariable codigoCambio
 $r = Pedir '/reports/progress' $auth
 $p1 = @($r.Cuerpo) | Where-Object { $_.projectId -eq 1 }
 Informar 'Tras pasar la tarea 1 a DONE, el proyecto 1 queda en 2/5 = 40' "PATCH $codigoCambio · HTTP $($r.Codigo) $(TextoProgreso $p1)" 'PATCH 200 · HTTP 200 1:5/2/40'
